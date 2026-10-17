@@ -1,0 +1,19 @@
+[Unit]
+Description=LAN Chat (FastAPI WebSocket)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# 修改为启动服务的 Ubuntu 用户和本项目绝对路径。
+User=YOUR_USER
+Group=YOUR_USER
+WorkingDirectory=/absolute/path/to/chat_lan
+ExecStart=/absolute/path/to/chat_lan/.venv/bin/uvicorn app:app --host 0.0.0.0 --port 8000
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

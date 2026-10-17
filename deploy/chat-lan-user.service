@@ -1,0 +1,14 @@
+[Unit]
+Description=LAN Chat (FastAPI WebSocket)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/lyy/code/chat_lan
+ExecStart=/home/lyy/code/chat_lan/.venv/bin/uvicorn app:app --host 0.0.0.0 --port 8000
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=default.target
