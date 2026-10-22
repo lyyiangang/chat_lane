@@ -13,21 +13,27 @@
 
 ## 启动
 
-需要 Python 3.10 或更高版本。
+需要 Python 3.10 或更高版本。项目使用 [uv](https://docs.astral.sh/uv/) 管理环境和依赖：`uv sync` 会根据 `pyproject.toml` 和 `uv.lock` 创建 `.venv` 并安装依赖，缺少合适的 Python 版本时会自动下载。
 
 ```bash
-cd /home/lyy/code/chat_lan
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-python app.py
+cd /path/to/chat_lane
+uv sync
+uv run python app.py
 ```
 
-服务默认监听所有网卡的 `8000` 端口。也可以使用环境变量修改地址和端口：
+如果还没有安装 uv：
 
 ```bash
-HOST=0.0.0.0 PORT=8080 python app.py
+curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
+
+服务默认监听所有网卡的 `8000` 端口；如果该端口已被占用，会自动顺延到下一个可用端口，并打印实际使用的端口。也可以用环境变量修改地址和起始端口：
+
+```bash
+HOST=0.0.0.0 PORT=8080 uv run python app.py
+```
+
+启动时会打印实际使用的访问地址，例如 `访问地址: http://192.168.1.100:8000`，手机直接打开该地址即可。
 
 ## 手机访问
 
@@ -52,6 +58,8 @@ sudo ufw allow 8000/tcp
 ```
 
 ## Ubuntu 后台运行
+
+服务直接使用项目内的 `.venv/bin/uvicorn`，所以安装服务前先在项目目录执行一次 `uv sync`。
 
 复制 `deploy/chat-lan.service.example`，将其中两处路径和 `YOUR_USER` 改成实际值：
 
@@ -100,9 +108,15 @@ sudo loginctl enable-linger "$USER"
 ## 开发与测试
 
 ```bash
-source .venv/bin/activate
-pip install -r requirements-dev.txt
-pytest
+uv sync
+uv run pytest
+```
+
+添加依赖时使用 uv 更新 `pyproject.toml` 和 `uv.lock`：
+
+```bash
+uv add 包名
+uv add --dev 包名
 ```
 
 健康检查：

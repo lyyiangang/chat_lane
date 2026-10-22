@@ -11,6 +11,8 @@ from urllib.request import urlopen
 
 import websockets
 
+from app import find_available_port
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -73,6 +75,15 @@ async def receive_until(websocket, event_type: str):
         )
         if event["type"] == event_type:
             return event
+
+
+def test_port_scan_skips_occupied_port() -> None:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as occupied:
+        occupied.bind(("127.0.0.1", 0))
+        occupied.listen()
+        busy_port = occupied.getsockname()[1]
+
+        assert find_available_port("127.0.0.1", busy_port) > busy_port
 
 
 def test_index_and_health() -> None:

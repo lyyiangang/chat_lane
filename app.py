@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import asyncio
+import errno
 import json
 import os
+import socket
 import uuid
 from collections import deque
 from datetime import datetime, timezone
@@ -185,11 +187,42 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
             await manager.broadcast({"type": "presence", "online": online})
 
 
+def find_available_port(host: str, start_port: int, attempts: int = 100) -> int:
+    """Return the first bindable port at or after start_port."""
+    for port in range(start_port, start_port + attempts):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            try:
+                sock.bind((host, port))
+            except OSError as exc:
+                if exc.errno != errno.EADDRINUSE:
+                    raise
+                continue
+            return port
+    raise RuntimeError(f"{start_port} 起的 {attempts} 个端口都不可用。")
+
+
+def local_ip() -> str | None:
+    """Return the IP used for outgoing traffic, if it can be detected."""
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+        try:
+            sock.connect(("8.8.8.8", 80))
+        except OSError:
+            return None
+        return sock.getsockname()[0]
+
+
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(
-        "app:app",
-        host=os.getenv("HOST", "0.0.0.0"),
-        port=int(os.getenv("PORT", "8000")),
-    )
+    host = os.getenv("HOST", "0.0.0.0")
+    requested_port = int(os.getenv("PORT", "8000"))
+    port = find_available_port(host, requested_port)
+    if port != requested_port:
+        print(f"端口 {requested_port} 已被占用，改用 {port}。", flush=True)
+
+    display_host = local_ip() if host == "0.0.0.0" else host
+    if display_host:
+        print(f"访问地址: http://{display_host}:{port}", flush=True)
+
+    uvicorn.run("app:app", host=host, port=port)
